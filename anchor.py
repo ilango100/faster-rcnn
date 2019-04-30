@@ -9,31 +9,28 @@ class Anchor:
                (60, 100), (60, 120), (60, 140), (80, 100), (80, 120), (80, 140), (80, 160), (100, 120), (100, 140), (120, 120), (120, 150), (120, 200)]
 
     def __init__(self, x, y, w, h, ww, hh):
-        l = max(x-w//2, 0)
-        t = max(y-h//2, 0)
-        w = min(w, ww-l-1)
-        h = min(h, hh-t-1)
-        if Anchor.showWarning and (w <= 0 or h <= 0):
-            #             raise Exception("Got w,h =",(w,h))
-            warnings.warn("Got w=%d, h=%d, Beware of implications!" % (w, h),)
+        self.valid = Anchor.isvalid(x, y, w, h, ww, hh)
+        if Anchor.showWarning and not self.valid:
+            warnings.warn(
+                "Invalid coordinates, Beware of implications!", RuntimeWarning)
             Anchor.showWarning = False
-        self.x = l+w//2
-        self.y = t+h//2
+        self.x = x
+        self.y = y
         self.w = w
         self.h = h
-        self.ww = ww
-        self.hh = hh
+        if self.valid:
+            self.id = Anchor.anchors.index((w, h))
 
-    @classmethod
-    def from_ltrb(cls, l, t, r, b, ww, hh):
+    @staticmethod
+    def from_ltrb(l, t, r, b, ww, hh):
         x = (l+r)//2
         y = (t+b)//2
         w = int(abs(r-l))
         h = int(abs(b-t))
         return Anchor(x, y, w, h, ww, hh)
 
-    @classmethod
-    def from_ltwh(cls, l, t, w, h, ww, hh):
+    @staticmethod
+    def from_ltwh(l, t, w, h, ww, hh):
         return Anchor(l+w//2, t+h//2, w, h, ww, hh)
 
     def iou(self, a):
@@ -53,7 +50,7 @@ class Anchor:
         return i/u
 
     def iou_tuple(self, a):
-        a = Anchor(*a, self.ww, self.hh)
+        a = Anchor(*a)
         return self.iou(a)
 
     def ltrb(self):
@@ -65,48 +62,65 @@ class Anchor:
         l, t, r, b = self.ltrb()
         plt.plot([l, r, r, l, l], [t, t, b, b, t], pl)
 
-    def __hash__(self):
-        return hash((self.x, self.y, self.w, self.h, self.ww, self.hh))
-
-    def __eq__(self, other):
-        return self.x == other.x and self.y == other.y and self.w == other.w and self.h == other.h and self.ww == other.ww and self.hh == other.hh
-
     def to_tuple(self):
         return (self.x, self.y, self.w, self.h)
 
-    @staticmethod
-    def gen_anchors(ww, hh, anchors):
-        anchs = list({
-            Anchor(x, y, w, h, ww, hh)
-            for x in range(ww)
-            for y in range(hh)
-            for w, h in anchors
-        })
-        return [x for x in anchs if x.w > 0 and x.h > 0]
+    def __hash__(self):
+        return hash(self.to_tuple())
 
-    @staticmethod
-    def gen_anchors_tuples(ww, hh, anchors):
-        return [x.to_tuple() for x in Anchor.gen_anchors(ww, hh, anchors)]
-
-    @staticmethod
-    def gen_anchors_scaled(ww, hh, anchors, r=1/8):
-        anchors = [(x*r, y*r) for x, y in anchors]
-        print(anchors)
-
-    def ismatching(self, anchors, thresh=0.7):
-        "Finds if any of the given anchors matches the current bbox."
-        for a in self.gen_anchors(self.ww, self.hh, anchors):
-            if self.iou(a) > thresh:
-                return True
-        return False
-
-    def maxiou(self, anchors):
-        mx = i = 0.0
-        for a in self.gen_anchors(self.ww, self.hh, anchors):
-            i = self.iou(a)
-            if i > mx:
-                mx = i
-        return mx
+    def __eq__(self, other):
+        return self.to_tuple() == other.to_tuple()
+        # return self.x == other.x and self.y == other.y and self.w == other.w and self.h == other.h
 
     def __repr__(self):
-        return "(%d,%d,%d,%d,%d,%d)" % (self.x, self.y, self.w, self.h, self.ww, self.hh)
+        return str(self.to_tuple())
+
+    @staticmethod
+    def isvalid(x, y, w, h, ww, hh):
+        if (w, h) not in Anchor.anchors:
+            return False
+        l = x-w//2
+        t = y-h//2
+        if l < 0 or l >= ww:
+            return False
+        if t < 0 or t >= hh:
+            return False
+        r = max(l+w, w)
+        b = max(t+h, h)
+        if r > ww or b > hh:
+            return False
+
+    @staticmethod
+    def gen_anchors(ww, hh):
+        anchs = list({
+            Anchor(x, y, w, h, ww, hh)
+            for x in ww
+            for y in hh
+            for w, h in Anchor.anchors
+        })
+        return [x for x in anchs if x.valid]
+
+    @staticmethod
+    def gen_anchor_tuples(xx, yy, ww, hh):
+        return [
+            (x, y, w, h)
+            for x in xx
+            for y in yy
+            for (w, h) in Anchor.anchors
+            if Anchor.isvalid(x, y, w, h, ww, hh)
+        ]
+
+    # def ismatching(self, anchors, thresh=0.7):
+    #     "Finds if any of the given anchors matches the current bbox."
+    #     for a in self.gen_anchors(self.ww, self.hh):
+    #         if self.iou(a) > thresh:
+    #             return True
+    #     return False
+
+    # def maxiou(self, anchors):
+    #     mx = i = 0.0
+    #     for a in self.gen_anchors(self.ww, self.hh):
+    #         i = self.iou(a)
+    #         if i > mx:
+    #             mx = i
+    #     return mx
