@@ -50,8 +50,20 @@ class Anchor:
         return i/u
 
     def iou_tuple(self, a):
-        a = Anchor(*a)
-        return self.iou(a)
+        l, t, r, b = self.ltrb()
+        x, y, w, h = a
+        w /= 2
+        h /= 2
+        ll, tt, rr, bb = x-w, y-h, x+w, y+h
+
+        i = (min(r, rr) - max(l, ll))
+        if i < 0:
+            return 0.0
+        i *= (min(b, bb) - max(t, tt))
+        if i < 0:
+            return 0.0
+        u = self.h*self.w+a.h*a.w-i
+        return i/u
 
     def ltrb(self):
         ww = self.w//2
@@ -63,7 +75,7 @@ class Anchor:
         plt.plot([l, r, r, l, l], [t, t, b, b, t], pl)
 
     def to_tuple(self):
-        return (self.x, self.y, self.w, self.h)
+        return (self.x, self.y, self.w, self.h, self.id)
 
     def __hash__(self):
         return hash(self.to_tuple())
@@ -103,10 +115,10 @@ class Anchor:
     @staticmethod
     def gen_anchor_tuples(xx, yy, ww, hh):
         return [
-            (x, y, w, h)
+            (x, y, w, h, i)
             for x in xx
             for y in yy
-            for (w, h) in Anchor.anchors
+            for i, (w, h) in enumerate(Anchor.anchors)
             if Anchor.isvalid(x, y, w, h, ww, hh)
         ]
 
