@@ -102,3 +102,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# train and test data
+train.tar.gz
+test.tar.gz
+train
+test
