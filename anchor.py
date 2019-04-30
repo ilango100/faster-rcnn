@@ -11,8 +11,8 @@ class Anchor:
     def __init__(self, x, y, w, h, ww, hh):
         self.valid = Anchor.isvalid(x, y, w, h, ww, hh)
         if Anchor.showWarning and not self.valid:
-            warnings.warn(
-                "Invalid coordinates, Beware of implications!", RuntimeWarning)
+            warnings.warn("Invalid coordinates, Beware of implications! (%d,%d,%d,%d,%d,%d)" % (
+                x, y, w, h, ww, hh), RuntimeWarning)
             Anchor.showWarning = False
         self.x = x
         self.y = y
@@ -51,10 +51,11 @@ class Anchor:
 
     def iou_tuple(self, a):
         l, t, r, b = self.ltrb()
-        x, y, w, h = a
-        w /= 2
-        h /= 2
-        ll, tt, rr, bb = x-w, y-h, x+w, y+h
+        x, y, id = a
+        w, h = Anchor.anchors[id]
+        w2 = w / 2
+        h2 = h / 2
+        ll, tt, rr, bb = x-w2, y-h2, x+w2, y+h2
 
         i = (min(r, rr) - max(l, ll))
         if i < 0:
@@ -62,7 +63,7 @@ class Anchor:
         i *= (min(b, bb) - max(t, tt))
         if i < 0:
             return 0.0
-        u = self.h*self.w+a.h*a.w-i
+        u = self.h*self.w+h*w-i
         return i/u
 
     def ltrb(self):
@@ -75,7 +76,10 @@ class Anchor:
         plt.plot([l, r, r, l, l], [t, t, b, b, t], pl)
 
     def to_tuple(self):
-        return (self.x, self.y, self.w, self.h, self.id)
+        if self.valid:
+            return (self.x, self.y, self.id)
+        else:
+            return (self.x, self.y, self.w, self.h)
 
     def __hash__(self):
         return hash(self.to_tuple())
@@ -83,6 +87,25 @@ class Anchor:
     def __eq__(self, other):
         return self.to_tuple() == other.to_tuple()
         # return self.x == other.x and self.y == other.y and self.w == other.w and self.h == other.h
+
+    def ioudelta(self, other):
+        l, t, r, b = self.ltrb()
+        x, y, id = other
+        w, h = Anchor.anchors[id]
+        w2 = w / 2
+        h2 = h / 2
+        ll, tt, rr, bb = x-w2, y-h2, x+w2, y+h2
+
+        i = (min(r, rr) - max(l, ll))
+        if i < 0:
+            return [0.0]*5
+        i *= (min(b, bb) - max(t, tt))
+        if i < 0:
+            return [0.0]*5
+        u = self.h*self.w+h*w-i
+        iou = i/u
+
+        return [iou, self.x-x, self.y-y, self.w-w, self.h-h]
 
     def __repr__(self):
         return str(self.to_tuple())
@@ -101,6 +124,7 @@ class Anchor:
         b = max(t+h, h)
         if r > ww or b > hh:
             return False
+        return True
 
     @staticmethod
     def gen_anchors(ww, hh):
@@ -115,7 +139,7 @@ class Anchor:
     @staticmethod
     def gen_anchor_tuples(xx, yy, ww, hh):
         return [
-            (x, y, w, h, i)
+            (x, y, i)
             for x in xx
             for y in yy
             for i, (w, h) in enumerate(Anchor.anchors)

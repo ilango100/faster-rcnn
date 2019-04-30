@@ -48,4 +48,6 @@ for path in splits:
                          "imgwidth": imgwidth}
             i += 1
 
+    df["x"] = df.left+df.width/2
+    df["y"] = df.top+df.height/2
     df.to_csv(path+".csv", index=False)
