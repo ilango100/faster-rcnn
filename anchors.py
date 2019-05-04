@@ -1,5 +1,8 @@
 import warnings
 import matplotlib.pyplot as plt
+import pandas as pd
+from tqdm import tqdm
+import os
 
 
 class Anchor:
@@ -160,3 +163,51 @@ class Anchor:
     #         if i > mx:
     #             mx = i
     #     return mx
+
+
+# Set the feature extractor ratio here. In my basenet case, it is 8
+r = 8
+
+splits = ["train", "test"]
+# Additionally, "label" column will also be added.
+cols = ["iou", "dx", "dy", "dw", "dh"]
+
+for split in splits:
+    if os.path.exists("anchors-"+split):
+        print("anchors-"+split, "already exists. No need of anchors extraction")
+        continue
+    os.makedirs("anchors-"+split)
+
+    df = pd.read_csv(split+".csv")
+
+    for name in tqdm(df.name.unique(), desc=split):
+        ww = df.loc[df.name == name, "imgwidth"].max()
+        hh = df.loc[df.name == name, "imgheight"].max()
+        if hh < 21:
+            continue
+        xx = range(r//2-1, ww, r)
+        yy = range(r//2-1, hh, r)
+        ancs = Anchor.gen_anchor_tuples(xx, yy, ww, hh)
+
+        idf = pd.DataFrame(
+            [[0.0, 0.0, 0.0, 0.0, 0.0]],
+            index=pd.MultiIndex.from_tuples(ancs, 0, ["x", "y", "i"]),
+            columns=cols
+        )
+        idf["label"] = -1
+
+        for x, y, w, h, label in df.loc[df.name == name, ["x", "y", "width", "height", "label"]].values:
+            anc = Anchor(x, y, w, h, ww, hh)
+            ioudelta = idf.index.to_frame().apply(anc.ioudelta, axis=1, result_type="expand")
+            ioudelta.columns = cols
+            replace = ioudelta["iou"] > idf["iou"]
+            idf.loc[replace, cols] = ioudelta[replace]
+            idf.loc[replace, "label"] = label
+
+        idx = idf.index.to_frame(index=False)
+        idx.x = (idx.x-3)//8
+        idx.y = (idx.y-3)//8
+        idf.index = pd.MultiIndex.from_frame(idx)
+        idf.label = idf.label.astype(int)
+
+        idf.to_csv("anchors-"+split+"/"+name+".csv")
