@@ -107,11 +107,9 @@ venv.bak/
 .vscode
 
 # train and test data
-train.tar.gz
-test.tar.gz
-train
-test
-train.csv
-test.csv
-anchors-train
-anchors-test
+train*
+test*
+anchors-*
+
+# Trained model
+*.h5
