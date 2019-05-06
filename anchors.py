@@ -149,65 +149,52 @@ class Anchor:
             if Anchor.isvalid(x, y, w, h, ww, hh)
         ]
 
-    # def ismatching(self, anchors, thresh=0.7):
-    #     "Finds if any of the given anchors matches the current bbox."
-    #     for a in self.gen_anchors(self.ww, self.hh):
-    #         if self.iou(a) > thresh:
-    #             return True
-    #     return False
 
-    # def maxiou(self, anchors):
-    #     mx = i = 0.0
-    #     for a in self.gen_anchors(self.ww, self.hh):
-    #         i = self.iou(a)
-    #         if i > mx:
-    #             mx = i
-    #     return mx
+if __name__ == "__main__":
 
+    # Set the feature extractor ratio here. In my basenet case, it is 8
+    r = 8
 
-# Set the feature extractor ratio here. In my basenet case, it is 8
-r = 8
+    splits = ["train", "test"]
+    # Additionally, "label" column will also be added.
+    cols = ["iou", "dx", "dy", "dw", "dh"]
 
-splits = ["train", "test"]
-# Additionally, "label" column will also be added.
-cols = ["iou", "dx", "dy", "dw", "dh"]
-
-for split in splits:
-    if os.path.exists("anchors-"+split):
-        print("anchors-"+split, "already exists. No need of anchors extraction")
-        continue
-    os.makedirs("anchors-"+split)
-
-    df = pd.read_csv(split+".csv")
-
-    for name in tqdm(df.name.unique(), desc=split):
-        ww = df.loc[df.name == name, "imgwidth"].max()
-        hh = df.loc[df.name == name, "imgheight"].max()
-        if hh < 21:
+    for split in splits:
+        if os.path.exists("anchors-"+split):
+            print("anchors-"+split, "already exists. No need of anchors extraction")
             continue
-        xx = range(r//2-1, ww, r)
-        yy = range(r//2-1, hh, r)
-        ancs = Anchor.gen_anchor_tuples(xx, yy, ww, hh)
+        os.makedirs("anchors-"+split)
 
-        idf = pd.DataFrame(
-            [[0.0, 0.0, 0.0, 0.0, 0.0]],
-            index=pd.MultiIndex.from_tuples(ancs, 0, ["x", "y", "i"]),
-            columns=cols
-        )
-        idf["label"] = -1
+        df = pd.read_csv(split+".csv")
 
-        for x, y, w, h, label in df.loc[df.name == name, ["x", "y", "width", "height", "label"]].values:
-            anc = Anchor(x, y, w, h, ww, hh)
-            ioudelta = idf.index.to_frame().apply(anc.ioudelta, axis=1, result_type="expand")
-            ioudelta.columns = cols
-            replace = ioudelta["iou"] > idf["iou"]
-            idf.loc[replace, cols] = ioudelta[replace]
-            idf.loc[replace, "label"] = label
+        for name in tqdm(df.name.unique(), desc=split):
+            ww = df.loc[df.name == name, "imgwidth"].max()
+            hh = df.loc[df.name == name, "imgheight"].max()
+            if hh < 21:
+                continue
+            xx = range(r//2-1, ww, r)
+            yy = range(r//2-1, hh, r)
+            ancs = Anchor.gen_anchor_tuples(xx, yy, ww, hh)
 
-        idx = idf.index.to_frame(index=False)
-        idx.x = (idx.x-3)//8
-        idx.y = (idx.y-3)//8
-        idf.index = pd.MultiIndex.from_frame(idx)
-        idf.label = idf.label.astype(int)
+            idf = pd.DataFrame(
+                [[0.0, 0.0, 0.0, 0.0, 0.0]],
+                index=pd.MultiIndex.from_tuples(ancs, 0, ["x", "y", "i"]),
+                columns=cols
+            )
+            idf["label"] = -1
 
-        idf.to_csv("anchors-"+split+"/"+name+".csv")
+            for x, y, w, h, label in df.loc[df.name == name, ["x", "y", "width", "height", "label"]].values:
+                anc = Anchor(x, y, w, h, ww, hh)
+                ioudelta = idf.index.to_frame().apply(anc.ioudelta, axis=1, result_type="expand")
+                ioudelta.columns = cols
+                replace = ioudelta["iou"] > idf["iou"]
+                idf.loc[replace, cols] = ioudelta[replace]
+                idf.loc[replace, "label"] = label
+
+            idx = idf.index.to_frame(index=False)
+            idx.x = (idx.x-3)//8
+            idx.y = (idx.y-3)//8
+            idf.index = pd.MultiIndex.from_frame(idx)
+            idf.label = idf.label.astype(int)
+
+            idf.to_csv("anchors-"+split+"/"+name+".csv")
