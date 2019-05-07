@@ -161,8 +161,15 @@ class Anchor:
 
 if __name__ == "__main__":
 
+    import argparse
+
+    args = argparse.ArgumentParser(description="Extract anchors for dataset")
+    args.add_argument("r", help="Feature extractor scale ratio",
+                      action="store_const", const=8)
+    args = args.parse_args()
+
     # Set the feature extractor ratio here. In my basenet case, it is 8
-    r = 8
+    r = args.r
 
     splits = ["train", "test"]
     # Additionally, "label" column will also be added.
