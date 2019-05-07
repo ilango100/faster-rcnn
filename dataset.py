@@ -9,7 +9,12 @@ import h5py
 import numpy as np
 import pandas as pd
 import cv2 as cv
+import argparse
 
+args = argparse.ArgumentParser(description="SVHN Dataset download and prepare")
+args.add_argument("-c", "--convert", action="store_true",
+                  dest="convert", help="Convert mat to csv")
+args = args.parse_args()
 
 splits = ["train", "test"]
 baseurl = "http://ufldl.stanford.edu/housenumbers/"
@@ -39,6 +44,9 @@ for file in splits:
     for memb in tqdm(fd.getmembers(), desc=fname + " extraction"):
         fd.extract(memb)
     fd.close()
+
+if not args.convert:
+    exit()
 
 for file in splits:
     if os.path.exists(file+".csv"):
