@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from tqdm import tqdm
 import os
+from copy import deepcopy
 
 
 class Anchor:
@@ -23,6 +24,14 @@ class Anchor:
         self.h = h
         if self.valid:
             self.id = Anchor.anchors.index((w, h))
+
+    def offset_anchor(self, dx, dy, dw, dh):
+        anc = deepcopy(self)
+        anc.x += dx
+        anc.y += dy
+        anc.w += dw
+        anc.h += dh
+        return anc
 
     @staticmethod
     def from_ltrb(l, t, r, b, ww, hh):
