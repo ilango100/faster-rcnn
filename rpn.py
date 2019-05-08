@@ -18,11 +18,10 @@ def data_gen(split=b"train"):
         img = file[8:-4]
         img = cv.imread(img)[:, :, ::-1]
 
-        out_shape = (math.ceil(img.shape[0]/8) //
-                     1, math.ceil(img.shape[1]/8)//1)
+        # Pseudo "batchify" the input image
         img.shape = (1, *img.shape)
 
-        # Read csv
+        # Read csv and sample positives
         df = pd.read_csv(file)
         pos = df.iou > 0.7
         lpos = pos.sum()
@@ -124,7 +123,11 @@ rpn.compile("adam", [pos_crossentropy, pos_huber],
 ])
 
 
-rpn.fit(train, steps_per_epoch=train_steps,
-        validation_data=test, validation_steps=val_steps)
+try:
+    rpn.fit(train, steps_per_epoch=train_steps,
+            validation_data=test, validation_steps=val_steps)
+except:
+    print("Model will be saved as rpn.h5")
 
 rpn.save("rpn.h5")
+print("Model saved as rpn.h5")
