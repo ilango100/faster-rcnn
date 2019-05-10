@@ -82,12 +82,12 @@ x = tf.keras.layers.BatchNormalization(momentum=0.9)(x)
 x = tf.keras.layers.Dense(64, activation=tf.keras.activations.relu)(x)
 
 x = tf.keras.layers.Dropout(rate=0.4)(x)
-x = tf.keras.layers.Dense(10)(x)
+x = tf.keras.layers.Dense(10, activation='softmax')(x)
 
 
 # Compile the model
 svhn = tf.keras.Model(inputs=inp, outputs=x)
-svhn.compile("adam", tf.losses.sparse_softmax_cross_entropy, metrics=[
+svhn.compile("adam", tf.keras.losses.sparse_categorical_crossentropy, metrics=[
              tf.keras.metrics.SparseCategoricalAccuracy(name="acc")])
 print(svhn.summary())
 

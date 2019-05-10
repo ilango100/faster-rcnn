@@ -113,7 +113,10 @@ def pos_huber(labels, pred):
     p = tf.gather_nd(pred[0], xyi)
     l = tf.cast(labels[:, 3], tf.float32)
 
-    return tf.losses.huber_loss(l, p)
+    try:
+        return tf.keras.losses.Huber()(l, p)
+    except:
+        return tf.losses.huber_loss(l, p)
 
 
 rpn.compile("adam", [pos_crossentropy, pos_huber],
