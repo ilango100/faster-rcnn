@@ -111,5 +111,5 @@ train*
 test*
 anchors-*
 
-# Trained model
+# Trained models
 *.h5
