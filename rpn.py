@@ -71,7 +71,7 @@ test = tf.data.Dataset.from_generator(data_gen, (tf.int64, (tf.int64, tf.float32
 
 
 # Load the trained base model
-base = tf.keras.models.load_model("svhn.h5", compile=False)
+base = tf.keras.models.load_model("base.h5", compile=False)
 # print(base.summary()) # to see all layers
 
 

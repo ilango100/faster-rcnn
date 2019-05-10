@@ -25,13 +25,21 @@ class Anchor:
         if self.valid:
             self.id = Anchor.anchors.index((w, h))
 
-    def offset_anchor(self, dx, dy, dw, dh):
-        anc = deepcopy(self)
-        anc.x += dx
-        anc.y += dy
-        anc.w += dw
-        anc.h += dh
-        return anc
+    @staticmethod
+    def isvalid(x, y, w, h, ww, hh):
+        if (w, h) not in Anchor.anchors:
+            return False
+        l = x-w//2
+        t = y-h//2
+        if l < 0 or l >= ww:
+            return False
+        if t < 0 or t >= hh:
+            return False
+        r = max(l+w, w)
+        b = max(t+h, h)
+        if r > ww or b > hh:
+            return False
+        return True
 
     @staticmethod
     def from_ltrb(l, t, r, b, ww, hh):
@@ -44,6 +52,14 @@ class Anchor:
     @staticmethod
     def from_ltwh(l, t, w, h, ww, hh):
         return Anchor(l+w//2, t+h//2, w, h, ww, hh)
+
+    def offset(self, dx, dy, dw, dh):
+        "Offsets the anchor. Doesnot create a copy."
+        self.x += dx
+        self.y += dy
+        self.w += dw
+        self.h += dh
+        return anc
 
     def iou(self, a):
         if not isinstance(a, Anchor):
@@ -61,9 +77,12 @@ class Anchor:
         u = self.h*self.w+a.h*a.w-i
         return i/u
 
-    def iou_tuple(self, a):
+    def ioudelta(self, other):
+        """
+        Calculates iou and delta x,y,w,h values for other as (x,y,id) tuple.
+        """
         l, t, r, b = self.ltrb()
-        x, y, id = a
+        x, y, id = other
         w, h = Anchor.anchors[id]
         w2 = w / 2
         h2 = h / 2
@@ -71,12 +90,14 @@ class Anchor:
 
         i = (min(r, rr) - max(l, ll))
         if i < 0:
-            return 0.0
+            return [0.0]*5
         i *= (min(b, bb) - max(t, tt))
         if i < 0:
-            return 0.0
+            return [0.0]*5
         u = self.h*self.w+h*w-i
-        return i/u
+        iou = i/u
+
+        return [iou, self.x-x, self.y-y, self.w-w, self.h-h]
 
     def ltrb(self):
         ww = self.w//2
@@ -100,43 +121,8 @@ class Anchor:
         return self.to_tuple() == other.to_tuple()
         # return self.x == other.x and self.y == other.y and self.w == other.w and self.h == other.h
 
-    def ioudelta(self, other):
-        l, t, r, b = self.ltrb()
-        x, y, id = other
-        w, h = Anchor.anchors[id]
-        w2 = w / 2
-        h2 = h / 2
-        ll, tt, rr, bb = x-w2, y-h2, x+w2, y+h2
-
-        i = (min(r, rr) - max(l, ll))
-        if i < 0:
-            return [0.0]*5
-        i *= (min(b, bb) - max(t, tt))
-        if i < 0:
-            return [0.0]*5
-        u = self.h*self.w+h*w-i
-        iou = i/u
-
-        return [iou, self.x-x, self.y-y, self.w-w, self.h-h]
-
     def __repr__(self):
         return str(self.to_tuple())
-
-    @staticmethod
-    def isvalid(x, y, w, h, ww, hh):
-        if (w, h) not in Anchor.anchors:
-            return False
-        l = x-w//2
-        t = y-h//2
-        if l < 0 or l >= ww:
-            return False
-        if t < 0 or t >= hh:
-            return False
-        r = max(l+w, w)
-        b = max(t+h, h)
-        if r > ww or b > hh:
-            return False
-        return True
 
     @staticmethod
     def gen_anchors(ww, hh):
