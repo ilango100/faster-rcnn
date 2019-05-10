@@ -5,24 +5,24 @@ import argparse
 
 args = argparse.ArgumentParser(description="Train the base network")
 args.add_argument("-e", "--epochs", type=int, dest="epochs", default=50)
-args.add_argument("-np", "--no-plot", action="store_false", dest="plot")
+args.add_argument("-b", "--batch", type=int, dest="batch_size", default=128)
+args.add_argument("-np", "--no-plot", action="store_true", dest="no_plot")
 args = args.parse_args()
 
 # Ready the dataset
 svhnb = tfds.builder("svhn_cropped")
 svhnb.download_and_prepare()
 
-bsize = 4096
 svhntr = svhnb.as_dataset(split=tfds.Split.TRAIN, as_supervised=True).repeat().map(
     lambda x, y: (tf.image.random_brightness(x/255, 0.6), y)).map(
     lambda x, y: (tf.image.random_contrast(x, 0.7, 1.3), y)).map(
     lambda x, y: (tf.image.random_hue(x, 0.4), y)).map(
     lambda x, y: (x*255, y)
-).batch(bsize).prefetch(tf.data.experimental.AUTOTUNE)
+).batch(args.batch_size).prefetch(tf.data.experimental.AUTOTUNE)
 svhnte = svhnb.as_dataset(split=tfds.Split.TEST, as_supervised=True).repeat(
-).batch(bsize).prefetch(tf.data.experimental.AUTOTUNE)
-trsteps = svhnb.info.splits["train"].num_examples // bsize
-testeps = svhnb.info.splits["test"].num_examples // bsize
+).batch(args.batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+trsteps = svhnb.info.splits["train"].num_examples // args.batch_size
+testeps = svhnb.info.splits["test"].num_examples // args.batch_size
 
 
 # Residual block
@@ -106,14 +106,15 @@ try:
                         tf.keras.callbacks.EarlyStopping(
                             patience=5, restore_best_weights=True)
                     ])
+    errored = False
 except:
-    pass
+    errored = True
 
 # Save the model
 svhn.save("base.h5")
 print("Model saved as base.h5")
 
-if not args.plot:
+if errored or args.no_plot:
     exit()
 
 plt.plot(hist.history["loss"], label="Train")
