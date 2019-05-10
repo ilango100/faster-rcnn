@@ -128,8 +128,8 @@ def pos_huber(labels, pred):
 
 rpn.compile("adam", [pos_crossentropy, pos_huber],
             target_tensors=[
-                tf.placeholder(dtype=tf.int64, shape=(None, 4)),
-                tf.placeholder(dtype=tf.float32, shape=(None, 4)),
+                tf.TensorSpec(shape=(None, 4), dtype=tf.int64),
+                tf.TensorSpec(shape=(None, 4), dtype=tf.float32),
 ])
 
 try:
