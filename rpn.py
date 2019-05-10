@@ -128,8 +128,8 @@ def pos_huber(labels, pred):
 
 rpn.compile("adam", [pos_crossentropy, pos_huber],
             target_tensors=[
-                tf.TensorSpec(shape=(None, 4), dtype=tf.int64),
-                tf.TensorSpec(shape=(None, 4), dtype=tf.float32),
+                tf.keras.Input(shape=(4,), dtype=tf.int64),
+                tf.keras.Input(shape=(4,), dtype=tf.float32),
 ])
 
 try:
