@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
     import argparse
 
-    args = argparse.ArgumentParser(description="Extract anchors for dataset")
+    args = argparse.ArgumentParser(description="Generate anchors for dataset")
     args.add_argument("r", help="Feature extractor scale ratio",
                       action="store_const", const=8)
     args = args.parse_args()

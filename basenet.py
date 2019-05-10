@@ -3,7 +3,7 @@ import tensorflow_datasets as tfds
 import tensorflow as tf
 import argparse
 
-args = argparse.ArgumentParser()
+args = argparse.ArgumentParser(description="Train the base network")
 args.add_argument("-e", "--epochs", type=int, dest="epochs", default=50)
 args.add_argument("-np", "--no-plot", action="store_false", dest="plot")
 args = args.parse_args()

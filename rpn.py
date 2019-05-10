@@ -1,10 +1,17 @@
-import math
-import tensorflow as tf
+from anchors import Anchor
 import numpy as np
 import pandas as pd
 import cv2 as cv
+import tensorflow as tf
+import matplotlib.pyplot as plt
 
-from anchors import Anchor
+import argparse
+args = argparse.ArgumentParser(
+    description="Train the Region Proposal Network (RPN)")
+args.add_argument("-e", "--epochs", type=int, dest="epochs", default=10)
+args.add_argument("-np", "--no-plot", action="store_false", dest="plot")
+args = args.parse_args()
+
 n_anchors = len(Anchor.anchors)
 train_steps = len(tf.io.gfile.glob("train/*.png"))
 val_steps = len(tf.io.gfile.glob("test/*.png"))
@@ -125,12 +132,25 @@ rpn.compile("adam", [pos_crossentropy, pos_huber],
                 tf.placeholder(dtype=tf.float32, shape=(None, 4)),
 ])
 
+try:
+    rpn.load_weights("rpn.h5")
+except:
+    pass
 
 try:
-    rpn.fit(train, steps_per_epoch=train_steps,
-            validation_data=test, validation_steps=val_steps)
+    hist = rpn.fit(train, steps_per_epoch=train_steps, epochs=args.epochs,
+                   validation_data=test, validation_steps=val_steps)
 except:
     print("Model will be saved as rpn.h5")
 
 rpn.save("rpn.h5")
 print("Model saved as rpn.h5")
+
+if not args.plot:
+    exit()
+
+plt.plot(hist.history["loss"], label="Train")
+plt.plot(hist.history["val_loss"], label="Val")
+plt.legend()
+plt.title("Loss")
+plt.show()
