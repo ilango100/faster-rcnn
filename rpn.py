@@ -72,9 +72,9 @@ def data_gen(split=b"train"):
 
 # Load the datasets
 train = tf.data.Dataset.from_generator(data_gen, (tf.int64, (tf.int64, tf.float32)),
-                                       ((None, None, None, 3), ((None, 4), (None, 4))), ["train"]).repeat()
+                                       ((None, None, None, 3), ((None, 4), (None, 4))), ["train"]).repeat().prefetch(tf.data.experimental.AUTOTUNE)
 test = tf.data.Dataset.from_generator(data_gen, (tf.int64, (tf.int64, tf.float32)),
-                                      ((None, None, None, 3), ((None, 4), (None, 4))), ["test"]).repeat()
+                                      ((None, None, None, 3), ((None, 4), (None, 4))), ["test"]).repeat().prefetch(tf.data.experimental.AUTOTUNE)
 
 
 # Load the trained base model
