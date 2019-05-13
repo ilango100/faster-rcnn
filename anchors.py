@@ -59,7 +59,6 @@ class Anchor:
         self.y += dy
         self.w += dw
         self.h += dh
-        return anc
 
     def iou(self, a):
         if not isinstance(a, Anchor):

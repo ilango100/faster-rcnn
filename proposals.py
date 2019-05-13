@@ -4,7 +4,7 @@ from anchors import Anchor
 
 # Process the output from rpn to extract the anchors and probabilities
 def get_anchors(probs, deltas, prob_thresh=0.6, r=8):
-    ww, hh = probs.shape[:2]*r
+    ww, hh = np.array(probs.shape[:2])*r
     sel = probs >= prob_thresh
 
     # Take indices of selection and create anchors
@@ -13,11 +13,11 @@ def get_anchors(probs, deltas, prob_thresh=0.6, r=8):
                for y, x, i in idxs]
 
     # Drop invalid anchors
-    anchors = [anc for anc in anchors if anc.isvalid]
+    anchors = [anc for anc in anchors if anc.valid]
 
     # Offset the anchors
     for anc in anchors:
-        anc.offset(*deltas[anc.y, anc.x, anc.id*4:(anc.id+1)*4])
+        anc.offset(*deltas[anc.y//r, anc.x//r, anc.id*4:(anc.id+1)*4])
     return np.array(anchors), probs[sel]
 
 
