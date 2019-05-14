@@ -8,22 +8,20 @@ from copy import deepcopy
 
 class Anchor:
 
-    showWarning = True
     anchors = [(10, 20), (10, 30), (10, 40), (20, 20), (20, 40), (20, 60), (40, 40), (40, 60), (40, 80), (40, 100), (40, 120), (60, 60), (60, 80),
                (60, 100), (60, 120), (60, 140), (80, 100), (80, 120), (80, 140), (80, 160), (100, 120), (100, 140), (120, 120), (120, 150), (120, 200)]
 
     def __init__(self, x, y, w, h, ww, hh):
-        self.valid = Anchor.isvalid(x, y, w, h, ww, hh)
-        if Anchor.showWarning and not self.valid:
-            warnings.warn("Invalid coordinates, Beware of implications! (%d,%d,%d,%d,%d,%d)" % (
-                x, y, w, h, ww, hh), RuntimeWarning)
-            Anchor.showWarning = False
         self.x = x
         self.y = y
         self.w = w
         self.h = h
-        if self.valid:
+        self.ww = ww
+        self.hh = hh
+        try:
             self.id = Anchor.anchors.index((w, h))
+        except:
+            self.id = -1
 
     @staticmethod
     def isvalid(x, y, w, h, ww, hh):
@@ -38,6 +36,22 @@ class Anchor:
         r = max(l+w, w)
         b = max(t+h, h)
         if r > ww or b > hh:
+            return False
+        return True
+
+    @property
+    def valid(self):
+        if (self.w, self.h) not in Anchor.anchors:
+            return False
+        l = x-w//2
+        t = y-h//2
+        if l < 0 or l >= self.ww:
+            return False
+        if t < 0 or t >= self.hh:
+            return False
+        r = max(l+self.w, self.w)
+        b = max(t+self.h, self.h)
+        if r > self.ww or b > self.hh:
             return False
         return True
 

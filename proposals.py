@@ -9,7 +9,7 @@ def get_anchors(probs, deltas, prob_thresh=0.6, r=8):
 
     # Take indices of selection and create anchors
     idxs = np.transpose(np.nonzero(sel))
-    anchors = [Anchor(x*r, y*r, *Anchor.anchors[i], ww, hh)
+    anchors = [Anchor(x*r+(r//2)-1, y*r+(r//2)-1, *Anchor.anchors[i], ww, hh)
                for y, x, i in idxs]
 
     # Drop invalid anchors
@@ -17,7 +17,8 @@ def get_anchors(probs, deltas, prob_thresh=0.6, r=8):
 
     # Offset the anchors
     for anc in anchors:
-        anc.offset(*deltas[anc.y//r, anc.x//r, anc.id*4:(anc.id+1)*4])
+        anc.offset(*deltas[(anc.y+1-(r//2))//r,
+                           (anc.x+1-(r//2))//r, anc.id*4:(anc.id+1)*4])
     return np.array(anchors), probs[sel]
 
 
