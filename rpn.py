@@ -9,7 +9,7 @@ import argparse
 args = argparse.ArgumentParser(
     description="Train the Region Proposal Network (RPN)")
 args.add_argument("-e", "--epochs", type=int, dest="epochs", default=10)
-args.add_argument("-np", "--no-plot", action="store_false", dest="plot")
+args.add_argument("-np", "--no-plot", action="store_true", dest="no_plot")
 args = args.parse_args()
 
 n_anchors = len(Anchor.anchors)
@@ -140,13 +140,15 @@ except:
 try:
     hist = rpn.fit(train, steps_per_epoch=train_steps, epochs=args.epochs,
                    validation_data=test, validation_steps=val_steps)
+    errored = False
 except:
+    errored = True
     print("Model will be saved as rpn.h5")
 
 rpn.save("rpn.h5")
 print("Model saved as rpn.h5")
 
-if not args.plot:
+if errored or args.no_plot:
     exit()
 
 plt.plot(hist.history["loss"], label="Train")
