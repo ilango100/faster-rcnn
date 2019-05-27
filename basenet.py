@@ -27,13 +27,14 @@ testeps = svhnb.info.splits["test"].num_examples // args.batch_size
 
 # Residual block
 def residual(inp, filters=128, momentum=0.9):
-    inp = x = tf.keras.layers.BatchNormalization(momentum=momentum)(inp)
+    # Use BN only for residual and not for skip.
+    x = tf.keras.layers.BatchNormalization(momentum=momentum)(inp)
     x = tf.keras.layers.Conv2D(
         filters, 3, 1, 'same', activation=tf.keras.activations.relu)(x)
 
     x = tf.keras.layers.BatchNormalization(momentum=momentum)(x)
-    x = tf.keras.layers.Conv2D(
-        filters, 3, 1, 'same', activation=tf.keras.activations.relu)(x)
+    x = tf.keras.layers.Conv2D(filters, 3, 1, 'same')(x)
+    # Use relu before addition and end up always adding positive residual!
 
     x = tf.keras.layers.add([x, inp])
 
@@ -42,16 +43,17 @@ def residual(inp, filters=128, momentum=0.9):
 
 # Residual reduction block
 def reduction(inp, filters=128, momentum=0.9):
-    inp = x = tf.keras.layers.BatchNormalization(momentum=momentum)(inp)
-    inp = tf.keras.layers.Conv2D(filters, 1, 2, 'same')(inp)
+    # Use BN only for residual and not for skip.
+    x = tf.keras.layers.BatchNormalization(momentum=momentum)(inp)
 
     x = tf.keras.layers.Conv2D(
         filters, 3, 2, 'same', activation=tf.keras.activations.relu)(x)
 
     x = tf.keras.layers.BatchNormalization(momentum=momentum)(x)
-    x = tf.keras.layers.Conv2D(
-        filters, 3, 1, 'same', activation=tf.keras.activations.relu)(x)
+    x = tf.keras.layers.Conv2D(filters, 3, 1, 'same')(x)
+    # Never use relu before addition, since output is always positive and explodes on addition.
 
+    inp = tf.keras.layers.Conv2D(filters, 1, 2, 'same')(inp)
     x = tf.keras.layers.add([x, inp])
 
     return x
