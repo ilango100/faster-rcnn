@@ -88,17 +88,21 @@ features = base.get_layer("add_5").output
 # RPN
 # Classification output that predicts the probability of the given anchor being a digit
 # Apply sigmoid because output is probability
+x = tf.keras.layers.Conv2D(
+    512, 3, 1, "same", activation="relu", name="rpn_clsf_pre")(features)
 clsf = tf.keras.layers.Conv2D(
-    n_anchors, 3, 1, 'same', activation='sigmoid', name="rpn_clsf")(features)
+    n_anchors, 1, 1, "same", activation="sigmoid", name="rpn_clsf")(x)
 
 # Regression output that predicts the offsets from given anchor box
 # No relu since values may be negative
-reg = tf.keras.layers.Conv2D(
-    n_anchors*4, 3, 1, 'same', name="rpn_reg")(features)
+x = tf.keras.layers.Conv2D(
+    512, 3, 1, "same", activation="relu", name="rpn_reg_pre")(features)
+reg = tf.keras.layers.Conv2D(n_anchors*4, 1, 1, "same", name="rpn_reg")(x)
 
 
 # Create the model
 rpn = tf.keras.Model(inputs=base.input, outputs=[clsf, reg])
+rpn.summary()
 
 
 # - For classification, crossentropy loss.

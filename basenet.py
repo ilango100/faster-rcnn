@@ -10,7 +10,7 @@ args.add_argument("-np", "--no-plot", action="store_true", dest="no_plot")
 args = args.parse_args()
 
 # Ready the dataset
-svhnb = tfds.builder("svhn_cropped")
+svhnb = tfds.builder("svhn_cropped", data_dir="D:\\MachineLearning\\tfds")
 svhnb.download_and_prepare()
 
 svhntr = svhnb.as_dataset(split=tfds.Split.TRAIN, as_supervised=True).repeat().map(
@@ -67,21 +67,21 @@ x = tf.keras.layers.BatchNormalization(momentum=0.9)(x)
 x = tf.keras.layers.Conv2D(
     64, 5, 2, 'same', activation=tf.keras.activations.relu)(x)
 
-x = tf.keras.layers.BatchNormalization(momentum=0.9)(x)
-x = tf.keras.layers.Conv2D(
-    128, 3, 1, 'same', activation=tf.keras.activations.relu)(x)
+# x = tf.keras.layers.BatchNormalization(momentum=0.9)(x)
+# x = tf.keras.layers.Conv2D(
+#     128, 3, 1, 'same', activation=tf.keras.activations.relu)(x)
 
-x = residual(x)
-x = reduction(x)
-x = residual(x)
-x = reduction(x)
-x = residual(x)
-x = residual(x)
+x = residual(x, 64)
+x = reduction(x, 128)
+x = residual(x, 128)
+x = reduction(x, 256)
+x = residual(x, 256)
+x = residual(x, 256)
 
 x = tf.keras.layers.GlobalAveragePooling2D()(x)
 
 x = tf.keras.layers.BatchNormalization(momentum=0.9)(x)
-x = tf.keras.layers.Dense(64, activation=tf.keras.activations.relu)(x)
+x = tf.keras.layers.Dense(128, activation=tf.keras.activations.relu)(x)
 
 x = tf.keras.layers.Dropout(rate=0.4)(x)
 x = tf.keras.layers.Dense(10, activation='softmax')(x)
@@ -91,7 +91,7 @@ x = tf.keras.layers.Dense(10, activation='softmax')(x)
 svhn = tf.keras.Model(inputs=inp, outputs=x)
 svhn.compile("adam", tf.keras.losses.sparse_categorical_crossentropy, metrics=[
              tf.keras.metrics.SparseCategoricalAccuracy(name="acc")])
-print(svhn.summary())
+svhn.summary()
 
 # Restore the model weights
 try:
@@ -106,7 +106,7 @@ try:
                         tf.keras.callbacks.ReduceLROnPlateau(
                             patience=3, verbose=1),
                         tf.keras.callbacks.EarlyStopping(
-                            patience=5, restore_best_weights=True)
+                            patience=10, restore_best_weights=True)
                     ])
     errored = False
 except:
